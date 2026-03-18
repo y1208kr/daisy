@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>DAISY – Daesang AI Sales Intelligence for You</title>
+  <style>
+    /* ===== DESIGN TOKENS ===== */
+    :root {
+      --red:        #CC0A2B;
+      --red-dark:   #A00020;
+      --red-light:  #FF2D4A;
+      --red-bg:     #FFF2F4;
+      --navy:       #1E2B4A;
+      --navy-light: #2E3F6A;
+      --gray-bg:    #F5F0EB;
+      --gray-line:  #E8E0D8;
+      --gray-text:  #888;
+      --text:       #1A1A1A;
+      --shadow:     0 2px 12px rgba(0,0,0,0.07);
+      --radius:     12px;
+    }
+
+    /* ===== RESET ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+      background: var(--gray-bg);
+      color: var(--text);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ===== HEADER ===== */
+    .header {
+      background: var(--red);
+      color: #fff;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      box-shadow: 0 2px 12px rgba(204,10,43,0.35);
+    }
+    .logo-mark {
+      width: 38px; height: 38px;
+      background: #fff;
+      border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; font-weight: 900;
+      color: var(--red);
+      letter-spacing: -1px;
+      flex-shrink: 0;
+    }
+    .header-text h1 { font-size: 18px; font-weight: 800; letter-spacing: -0.3px; }
+    .header-text p  { font-size: 10px; opacity: 0.8; margin-top: 1px; letter-spacing: 0.4px; }
+
+    /* Decorative stripe under header */
+    .header-stripe {
+      height: 4px;
+      background: linear-gradient(90deg, var(--red-dark) 0%, var(--red) 40%, #FF6B6B 100%);
+    }
+
+    /* ===== STEP PROGRESS ===== */
+    .step-nav {
+      background: #fff;
+      border-bottom: 1px solid var(--gray-line);
+      display: flex;
+      align-items: stretch;
+    }
+    .step-item {
+      flex: 1;
+      display: flex; align-items: center; justify-content: center;
+      gap: 7px;
+      padding: 13px 6px;
+      cursor: pointer;
+      transition: background 0.2s;
+      border-bottom: 3px solid transparent;
+      position: relative;
+    }
+    .step-item:not(:last-child)::after {
+      content: '';
+      position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+      width: 1px; height: 20px;
+      background: var(--gray-line);
+    }
+    .step-num {
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      background: #E4DDD6;
+      color: var(--gray-text);
+      font-size: 12px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+    .step-label { font-size: 12px; color: var(--gray-text); font-weight: 500; white-space: nowrap; transition: color 0.2s; }
+    .step-item.active { border-bottom-color: var(--red); }
+    .step-item.active .step-num   { background: var(--red); color: #fff; }
+    .step-item.active .step-label { color: var(--red); font-weight: 700; }
+    .step-item.done .step-num     { background: #27AE60; color: #fff; }
+    .step-item.done .step-label   { color: #27AE60; }
+
+    /* ===== MAIN ===== */
+    .main {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 20px 16px 100px;
+    }
+
+    /* ===== TAB CONTENT ===== */
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+
+    /* ===== CARD ===== */
+    .card {
+      background: #fff;
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 14px;
+      box-shadow: var(--shadow);
+    }
+    .card-head {
+      display: flex; align-items: center; gap: 9px;
+      margin-bottom: 16px;
+    }
+    .card-icon {
+      width: 30px; height: 30px;
+      background: var(--red);
+      border-radius: 7px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; flex-shrink: 0;
+    }
+    .card-title { font-size: 15px; font-weight: 700; color: var(--navy); }
+
+    /* ===== FORM ===== */
+    .form-label {
+      display: block;
+      font-size: 12px; font-weight: 700;
+      color: var(--navy);
+      margin-bottom: 8px;
+      letter-spacing: 0.2px;
+    }
+    .form-group { margin-bottom: 18px; }
+    .hint { font-size: 11px; color: var(--gray-text); margin-top: 5px; line-height: 1.5; }
+
+    /* Chip group */
+    .chip-row { display: flex; flex-wrap: wrap; gap: 7px; }
+    .chip {
+      padding: 6px 14px;
+      border: 1.5px solid var(--gray-line);
+      border-radius: 20px;
+      font-size: 13px; font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      background: #fff;
+      color: var(--text);
+      user-select: none;
+    }
+    .chip:hover { border-color: var(--red); color: var(--red); }
+    .chip.on    { background: var(--red); border-color: var(--red); color: #fff; font-weight: 600; }
+
+    /* Text inputs */
+    .inp {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid var(--gray-line);
+      border-radius: 8px;
+      font-size: 14px; font-family: inherit;
+      background: #fff; color: var(--text);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .inp:focus { border-color: var(--red); }
+    textarea.inp { min-height: 76px; resize: vertical; line-height: 1.6; }
+
+    /* ===== BUTTONS ===== */
+    .btn-primary {
+      width: 100%;
+      padding: 15px;
+      background: var(--red);
+      color: #fff;
+      border: none; border-radius: 10px;
+      font-size: 15px; font-weight: 700; font-family: inherit;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 7px;
+      transition: all 0.2s;
+    }
+    .btn-primary:hover:not(:disabled) { background: var(--red-dark); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(204,10,43,0.3); }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-primary:disabled { background: #CCC; cursor: not-allowed; }
+
+    .btn-navy {
+      background: var(--navy);
+    }
+    .btn-navy:hover:not(:disabled) { background: var(--navy-light); }
+
+    .btn-outline {
+      padding: 11px 18px;
+      background: #fff;
+      color: var(--red);
+      border: 1.5px solid var(--red);
+      border-radius: 8px;
+      font-size: 13px; font-weight: 600; font-family: inherit;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .btn-outline:hover { background: var(--red-bg); }
+
+    .btn-back {
+      display: flex; align-items: center; gap: 4px;
+      color: var(--gray-text); font-size: 13px;
+      background: none; border: none; font-family: inherit;
+      cursor: pointer; padding: 6px 0; margin-bottom: 14px;
+    }
+    .btn-back:hover { color: var(--red); }
+
+    /* ===== TREND CARDS ===== */
+    .trend-grid { display: grid; gap: 10px; }
+    .trend-card {
+      border: 2px solid var(--gray-line);
+      border-radius: 10px;
+      padding: 14px 42px 14px 14px;
+      cursor: pointer;
+      transition: all 0.18s;
+      background: #fff;
+      position: relative;
+    }
+    .trend-card:hover { border-color: var(--red); box-shadow: 0 2px 10px rgba(204,10,43,0.1); }
+    .trend-card.on    { border-color: var(--red); background: var(--red-bg); }
+    .trend-card.on::after {
+      content: '✓';
+      position: absolute; right: 13px; top: 50%; transform: translateY(-50%);
+      width: 24px; height: 24px;
+      background: var(--red); color: #fff;
+      border-radius: 50%;
+      font-size: 12px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .trend-num   { font-size: 10px; font-weight: 700; color: var(--red); margin-bottom: 3px; letter-spacing: 0.5px; text-transform: uppercase; }
+    .trend-title { font-size: 14px; font-weight: 600; color: var(--navy); line-height: 1.45; }
+
+    /* ===== MATERIAL CARDS ===== */
+    .material-card {
+      border-left: 3px solid var(--red);
+      background: #FAFAFA;
+      border-radius: 0 10px 10px 0;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+    }
+    .mat-num { font-size: 10px; font-weight: 700; color: var(--red); margin-bottom: 10px; letter-spacing: 0.5px; }
+    .mat-row { margin-bottom: 9px; }
+    .mat-row:last-child { margin-bottom: 0; }
+    .mat-label { font-size: 11px; font-weight: 700; color: var(--red); margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.3px; }
+    .mat-text  { font-size: 13px; line-height: 1.6; color: var(--text); }
+
+    /* ===== SELECTION HINT ===== */
+    .sel-hint {
+      font-size: 13px; color: var(--gray-text); text-align: center;
+      padding: 12px; background: #FAFAFA;
+      border-radius: 8px; border: 1.5px dashed var(--gray-line);
+      margin-bottom: 12px;
+      transition: all 0.2s;
+    }
+    .sel-hint.active { color: var(--red); border-color: var(--red); background: var(--red-bg); }
+
+    /* ===== PROMPT EDITOR ===== */
+    .prompt-editor { margin-top: 18px; }
+    .quick-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+    .q-chip {
+      padding: 5px 11px;
+      background: #EEF2FF; color: #3D5FC0;
+      border: 1px solid #C4D0F5; border-radius: 14px;
+      font-size: 12px; cursor: pointer;
+      transition: background 0.15s;
+    }
+    .q-chip:hover { background: #D8E0FF; }
+    .prompt-row { display: flex; gap: 8px; align-items: flex-end; }
+    .prompt-row textarea { flex: 1; }
+
+    /* ===== BRIEFING SHEET ===== */
+    .briefing-sheet {
+      background: #fff;
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+    }
+    .sheet-head {
+      background: var(--red);
+      color: #fff;
+      padding: 20px;
+    }
+    .sheet-head-top {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .sheet-brand { font-size: 11px; font-weight: 700; opacity: 0.85; letter-spacing: 1.5px; }
+    .sheet-date  { font-size: 11px; opacity: 0.7; }
+    .sheet-name  { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
+    .sheet-meta  { font-size: 12px; opacity: 0.82; margin-top: 3px; }
+
+    /* Red diagonal accent */
+    .sheet-accent {
+      height: 5px;
+      background: repeating-linear-gradient(
+        -55deg,
+        rgba(255,255,255,0.15) 0px, rgba(255,255,255,0.15) 4px,
+        transparent 4px, transparent 12px
+      );
+    }
+
+    .sheet-body { padding: 20px; }
+    .sheet-section { margin-bottom: 20px; }
+    .sheet-sec-title {
+      font-size: 10px; font-weight: 700; color: var(--red);
+      text-transform: uppercase; letter-spacing: 1.2px;
+      padding-bottom: 8px;
+      border-bottom: 1.5px solid #F0E8E0;
+      margin-bottom: 12px;
+    }
+    .trend-tags { display: flex; flex-wrap: wrap; gap: 7px; }
+    .trend-tag {
+      background: var(--red-bg); color: var(--red);
+      padding: 6px 13px; border-radius: 20px;
+      font-size: 12px; font-weight: 600;
+      border: 1px solid #FFD0D8;
+    }
+    .s-mat { background: #F9F7F5; border-radius: 8px; padding: 13px; margin-bottom: 10px; }
+    .s-mat-num { font-size: 10px; font-weight: 700; color: var(--red); margin-bottom: 8px; }
+    .s-mat-row { display: flex; gap: 8px; margin-bottom: 5px; font-size: 12px; line-height: 1.55; }
+    .s-mat-key { font-weight: 700; color: var(--navy); flex-shrink: 0; min-width: 54px; }
+
+    .sheet-footer {
+      background: var(--navy);
+      color: rgba(255,255,255,0.75);
+      padding: 11px 20px;
+      font-size: 10px; text-align: center;
+      letter-spacing: 0.3px;
+    }
+
+    /* Export buttons */
+    .export-row { display: flex; gap: 10px; margin-top: 14px; }
+    .export-row button { flex: 1; }
+
+    /* ===== LOADING ===== */
+    .loading {
+      display: flex; align-items: center; justify-content: center; gap: 12px;
+      padding: 40px 20px;
+      font-size: 13px; color: var(--gray-text);
+    }
+    .spinner {
+      width: 22px; height: 22px;
+      border: 3px solid #EEE;
+      border-top-color: var(--red);
+      border-radius: 50%;
+      animation: spin 0.75s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ===== ALERT ===== */
+    .alert { padding: 12px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 14px; }
+    .alert-err  { background: #FFEBEE; color: #C62828; border: 1px solid #FFCDD2; }
+    .alert-ok   { background: #E8F5E9; color: #2E7D32; border: 1px solid #C8E6C9; }
+
+    /* ===== DIVIDER ===== */
+    .divider { height: 1px; background: var(--gray-line); margin: 18px 0; }
+
+    /* ===== CLIENT SUMMARY PILL ===== */
+    .summary-pill {
+      background: #fff;
+      border: 1.5px solid var(--gray-line);
+      border-radius: 10px;
+      padding: 12px 16px;
+      margin-bottom: 14px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .summary-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--red); flex-shrink: 0; }
+    .summary-label { font-size: 11px; color: var(--gray-text); }
+    .summary-name  { font-size: 15px; font-weight: 700; color: var(--navy); }
+
+    /* ===== SITE BADGE ===== */
+    .site-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      background: #F0F4FF; color: #3D5FC0;
+      border: 1px solid #C4D0F5; border-radius: 12px;
+      font-size: 11px; font-weight: 600;
+      text-decoration: none;
+      transition: background 0.15s;
+    }
+    .site-badge:hover { background: #D8E0FF; }
+
+    /* ===== PRINT ===== */
+    @media print {
+      .header, .header-stripe, .step-nav,
+      .btn-back, .prompt-editor, .export-row,
+      #pane0, #pane1 { display: none !important; }
+      #pane2 { display: block !important; }
+      body { background: #fff; }
+      .main { padding: 0; max-width: 100%; }
+      .briefing-sheet { box-shadow: none; border-radius: 0; }
+      .card { box-shadow: none; }
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 420px) {
+      .main { padding: 14px 10px 80px; }
+      .card { padding: 16px; }
+      .header-text h1 { font-size: 16px; }
+      .sheet-name { font-size: 18px; }
+      .step-label { font-size: 11px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<header class="header">
+  <div class="logo-mark">D</div>
+  <div class="header-text">
+    <h1>DAISY</h1>
+    <p>DAESANG AI SALES INTELLIGENCE FOR YOU</p>
+  </div>
+</header>
+<div class="header-stripe"></div>
+
+<!-- ===== STEP NAVIGATION ===== -->
+<nav class="step-nav" id="stepNav">
+  <div class="step-item active" id="s0" onclick="tryGoStep(0)">
+    <div class="step-num">1</div>
+    <span class="step-label">거래처 입력</span>
+  </div>
+  <div class="step-item" id="s1" onclick="tryGoStep(1)">
+    <div class="step-num">2</div>
+    <span class="step-label">트렌드 &amp; 소재</span>
+  </div>
+  <div class="step-item" id="s2" onclick="tryGoStep(2)">
+    <div class="step-num">3</div>
+    <span class="step-label">브리핑 시트</span>
+  </div>
+</nav>
+
+<!-- ===== MAIN ===== -->
+<main class="main">
+
+  <!-- ──────────────── PANE 0: 거래처 입력 ──────────────── -->
+  <div id="pane0" class="tab-pane active">
+    <div class="card">
+      <div class="card-head">
+        <div class="card-icon">🏢</div>
+        <span class="card-title">거래처 정보 입력</span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">업종 *</label>
+        <div class="chip-row" id="industryGroup">
+          <div class="chip" data-group="industry">식자재</div>
+          <div class="chip" data-group="industry">소스</div>
+          <div class="chip" data-group="industry">조미료</div>
+          <div class="chip" data-group="industry">가공식품</div>
+          <div class="chip" data-group="industry">기타</div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">채널 *</label>
+        <div class="chip-row" id="channelGroup">
+          <div class="chip" data-group="channel">B2B 대리점</div>
+          <div class="chip" data-group="channel">B2C 소매</div>
+          <div class="chip" data-group="channel">온라인 쇼핑몰</div>
+          <div class="chip" data-group="channel">급식·단체</div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="clientName">거래처명 *</label>
+        <input type="text" id="clientName" class="inp" placeholder="예: 홈플러스 강남점">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="interests">담당자 관심사 / 최근 이슈 <span style="color:#aaa;font-weight:400">(선택)</span></label>
+        <textarea id="interests" class="inp" placeholder="예: 신규 PB상품 관심, 건강식품 라인업 확대 중, 최근 매출 부진"></textarea>
+        <p class="hint">입력할수록 더 맞춤화된 소재가 생성됩니다.</p>
+      </div>
+
+      <div id="formErr" class="alert alert-err" style="display:none"></div>
+
+      <button class="btn-primary" onclick="submitForm()">
+        <span>✨</span> AI 트렌드 분석 시작
+      </button>
+    </div>
+  </div>
+
+  <!-- ──────────────── PANE 1: 텍스트 입력 & 트렌드 & 소재 ──────────────── -->
+  <div id="pane1" class="tab-pane">
+    <button class="btn-back" onclick="goStep(0)">← 거래처 정보 수정</button>
+
+    <!-- Client summary -->
+    <div class="summary-pill">
+      <div class="summary-dot"></div>
+      <div>
+        <div class="summary-label">분석 대상 거래처</div>
+        <div class="summary-name" id="summaryText"></div>
+      </div>
+    </div>
+
+    <!-- ① 텍스트 입력 영역 -->
+    <div class="card" id="textInputCard">
+      <div class="card-head">
+        <div class="card-icon">📋</div>
+        <span class="card-title">참고 자료 붙여넣기</span>
+      </div>
+      <p style="font-size:13px; color:var(--gray-text); margin-bottom:14px; line-height:1.6">
+        뉴스 기사, 보고서, 업계 소식 등을 복사해서 아래에 붙여넣으세요.<br>
+        AI가 거래처에 맞는 핵심 트렌드를 추출합니다.
+      </p>
+
+      <!-- 빠른 출처 예시 -->
+      <div style="margin-bottom:12px">
+        <div style="font-size:11px; color:var(--gray-text); margin-bottom:6px; font-weight:600">참고할 만한 사이트</div>
+        <div style="display:flex; flex-wrap:wrap; gap:6px">
+          <a href="https://www.bigkinds.or.kr" target="_blank" class="site-badge">빅카인즈 뉴스</a>
+          <a href="https://www.mfds.go.kr" target="_blank" class="site-badge">식품의약품안전처</a>
+          <a href="https://www.aT.or.kr" target="_blank" class="site-badge">한국농수산식품유통공사</a>
+          <a href="https://www.kati.net" target="_blank" class="site-badge">식품산업통계정보</a>
+        </div>
+      </div>
+
+      <div id="textErr" class="alert alert-err" style="display:none"></div>
+
+      <textarea id="rawText" class="inp" style="min-height:180px; font-size:13px; line-height:1.7"
+        placeholder="예시)&#10;'2025년 가정간편식(HMR) 시장이 전년 대비 12% 성장하며 5조원을 돌파했다. 특히 프리미엄 소스류와 양념류 카테고리가 급성장하고 있으며, 소비자들은 건강과 편의성을 동시에 고려하는 경향을 보인다...'&#10;&#10;여러 기사나 자료를 한꺼번에 붙여넣어도 됩니다."></textarea>
+      <p class="hint" style="margin-top:6px">최소 20자 이상 입력해주세요. 여러 기사를 한번에 붙여넣을 수 있습니다.</p>
+
+      <button class="btn-primary" style="margin-top:14px" onclick="analyzeText()">
+        🔍 AI 트렌드 분석
+      </button>
+    </div>
+
+    <!-- ② 분석 결과 트렌드 카드 (분석 후 표시) -->
+    <div class="card" id="trendsCard" style="display:none">
+      <div class="card-head">
+        <div class="card-icon">📊</div>
+        <span class="card-title">추출된 핵심 트렌드</span>
+      </div>
+      <p style="font-size:13px; color:var(--gray-text); margin-bottom:14px">
+        상담에 활용할 트렌드를 선택하세요 (1~3개)
+      </p>
+      <div id="trendsWrap"></div>
+
+      <div style="margin-top:14px">
+        <div class="sel-hint" id="selHint">트렌드 카드를 1개 이상 선택하면 상담 소재를 생성할 수 있습니다.</div>
+        <button class="btn-primary" style="margin-top:10px" onclick="generateMaterials()">💬 상담 소재 생성</button>
+      </div>
+
+      <!-- 다시 분석 -->
+      <button class="btn-back" style="margin-top:10px; display:inline-flex" onclick="resetAnalysis()">↩ 텍스트 다시 입력</button>
+    </div>
+
+    <!-- ③ 소재 결과 -->
+    <div id="materialsCard" class="card" style="display:none; margin-top:14px">
+      <div class="card-head">
+        <div class="card-icon">💬</div>
+        <span class="card-title">상담 소재</span>
+      </div>
+      <div id="matsWrap"></div>
+
+      <div class="divider"></div>
+
+      <button class="btn-primary btn-navy" onclick="showBriefing()" id="briefingBtn">
+        📄 브리핑 시트 보기
+      </button>
+
+      <div class="divider"></div>
+
+      <!-- Prompt editor -->
+      <div class="prompt-editor">
+        <div class="form-label" style="margin-bottom:8px">결과 수정하기</div>
+        <div class="quick-chips">
+          <div class="q-chip" onclick="setQ('더 캐주얼하고 친근한 톤으로')">더 캐주얼하게</div>
+          <div class="q-chip" onclick="setQ('식품 트렌드 중심으로 더 구체적으로')">식품 트렌드 중심</div>
+          <div class="q-chip" onclick="setQ('청정원·해찬들 제품 연결을 더 강조해서')">청정원 강조</div>
+          <div class="q-chip" onclick="setQ('더 짧고 임팩트 있게')">간결하게</div>
+          <div class="q-chip" onclick="setQ('담당자 관심사에 더 집중해서')">관심사 집중</div>
+        </div>
+        <div class="prompt-row">
+          <textarea id="customPrompt" class="inp" style="min-height:58px" placeholder="추가 지시사항을 입력하거나 위 버튼을 클릭하세요"></textarea>
+          <button class="btn-outline" onclick="generateMaterials()">🔄 재생성</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ──────────────── PANE 2: 브리핑 시트 ──────────────── -->
+  <div id="pane2" class="tab-pane">
+    <button class="btn-back" onclick="goStep(1)">← 소재 수정</button>
+
+    <div id="sheetWrap"></div>
+
+    <div class="export-row">
+      <button class="btn-outline" onclick="doPrint()">🖨️ 인쇄 / PDF</button>
+      <button class="btn-primary btn-navy" onclick="doCopy()">📋 텍스트 복사</button>
+    </div>
+  </div>
+
+</main>
+
+<script>
+  // ============================================================
+  //  STATE
+  // ============================================================
+  const state = {
+    industry: '',
+    channel: '',
+    clientName: '',
+    interests: '',
+  };
+  let trends = [];
+  let selectedTrends = [];
+  let materials = [];
+
+  // ============================================================
+  //  CHIP SELECTION
+  // ============================================================
+  document.querySelectorAll('.chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const group = chip.dataset.group;
+      document.querySelectorAll(`.chip[data-group="${group}"]`).forEach(c => c.classList.remove('on'));
+      chip.classList.add('on');
+      state[group] = chip.textContent.trim();
+    });
+  });
+
+  // ============================================================
+  //  STEP NAVIGATION
+  // ============================================================
+  function goStep(idx) {
+    document.querySelectorAll('.tab-pane').forEach((p, i) => p.classList.toggle('active', i === idx));
+    document.querySelectorAll('.step-item').forEach((s, i) => {
+      s.classList.remove('active', 'done');
+      if (i < idx) s.classList.add('done');
+      if (i === idx) s.classList.add('active');
+    });
+  }
+
+  function tryGoStep(idx) {
+    // Allow backwards navigation freely; forward only if data exists
+    if (idx === 0) { goStep(0); return; }
+    if (idx === 1 && trends.length > 0) { goStep(1); return; }
+    if (idx === 2 && materials.length > 0) { goStep(2); return; }
+  }
+
+  // ============================================================
+  //  FORM SUBMIT
+  // ============================================================
+  async function submitForm() {
+    const err = document.getElementById('formErr');
+    err.style.display = 'none';
+
+    if (!state.industry)  { showErr('업종을 선택해주세요.'); return; }
+    if (!state.channel)   { showErr('채널을 선택해주세요.'); return; }
+    const name = document.getElementById('clientName').value.trim();
+    if (!name)            { showErr('거래처명을 입력해주세요.'); return; }
+
+    state.clientName = name;
+    state.interests  = document.getElementById('interests').value.trim();
+
+    document.getElementById('summaryText').textContent =
+      `${state.clientName} · ${state.industry} · ${state.channel}`;
+
+    goStep(1);
+    await fetchTrends();
+  }
+
+  function showErr(msg) {
+    const el = document.getElementById('formErr');
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+
+  // ============================================================
+  //  FETCH TRENDS
+  // ============================================================
+  async function fetchTrends() {
+    const wrap = document.getElementById('trendsWrap');
+    wrap.innerHTML = `<div class="loading"><div class="spinner"></div>AI가 트렌드를 분석 중입니다…</div>`;
+    document.getElementById('genBtnArea').style.display = 'none';
+    document.getElementById('materialsCard').style.display = 'none';
+    selectedTrends = [];
+
+    try {
+      const res = await fetch('/generate-trends', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(state)
+      });
+      if (!res.ok) throw new Error(`서버 오류 ${res.status}`);
+      const data = await res.json();
+      trends = data.trends || [];
+      if (trends.length === 0) throw new Error('트렌드를 불러오지 못했습니다.');
+      renderTrends();
+      document.getElementById('genBtnArea').style.display = 'block';
+    } catch (e) {
+      wrap.innerHTML = `<div class="alert alert-err">⚠️ ${e.message}<br><small>잠시 후 다시 시도해주세요.</small></div>`;
+    }
+  }
+
+  // ============================================================
+  //  RENDER TRENDS
+  // ============================================================
+  function renderTrends() {
+    const wrap = document.getElementById('trendsWrap');
+    const grid = document.createElement('div');
+    grid.className = 'trend-grid';
+    trends.forEach((t, i) => {
+      const card = document.createElement('div');
+      card.className = 'trend-card';
+      card.innerHTML = `<div class="trend-num">트렌드 ${i + 1}</div><div class="trend-title">${esc(t)}</div>`;
+      card.addEventListener('click', () => toggleTrend(i, t, card));
+      grid.appendChild(card);
+    });
+    wrap.innerHTML = '';
+    wrap.appendChild(grid);
+  }
+
+  // ============================================================
+  //  TOGGLE TREND
+  // ============================================================
+  function toggleTrend(i, trend, card) {
+    card.classList.toggle('on');
+    if (card.classList.contains('on')) {
+      if (!selectedTrends.includes(trend)) selectedTrends.push(trend);
+    } else {
+      selectedTrends = selectedTrends.filter(t => t !== trend);
+    }
+    const hint = document.getElementById('selHint');
+    if (selectedTrends.length > 0) {
+      hint.textContent = `${selectedTrends.length}개 선택됨 — 아래 버튼을 눌러 소재를 생성하세요.`;
+      hint.classList.add('active');
+    } else {
+      hint.textContent = '트렌드 카드를 1개 이상 선택하면 상담 소재를 생성할 수 있습니다.';
+      hint.classList.remove('active');
+    }
+  }
+
+  // ============================================================
+  //  GENERATE MATERIALS
+  // ============================================================
+  async function generateMaterials() {
+    if (selectedTrends.length === 0) { alert('트렌드를 1개 이상 선택해주세요.'); return; }
+
+    const card  = document.getElementById('materialsCard');
+    const wrap  = document.getElementById('matsWrap');
+    const btn   = document.getElementById('briefingBtn');
+
+    card.style.display = 'block';
+    btn.style.display = 'none';
+    wrap.innerHTML = `<div class="loading"><div class="spinner"></div>상담 소재를 생성 중입니다…</div>`;
+    card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    try {
+      const customPrompt = document.getElementById('customPrompt').value.trim();
+      const res = await fetch('/generate-materials', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trends: selectedTrends, clientData: state, customPrompt })
+      });
+      if (!res.ok) throw new Error(`서버 오류 ${res.status}`);
+      const data = await res.json();
+      materials = data.materials || [];
+      renderMaterials();
+      btn.style.display = 'flex';
+    } catch (e) {
+      wrap.innerHTML = `<div class="alert alert-err">⚠️ ${e.message}</div>`;
+    }
+  }
+
+  // ============================================================
+  //  RENDER MATERIALS
+  // ============================================================
+  function renderMaterials() {
+    const wrap = document.getElementById('matsWrap');
+    wrap.innerHTML = '';
+    materials.forEach((m, i) => {
+      const d = document.createElement('div');
+      d.className = 'material-card';
+      d.innerHTML = `
+        <div class="mat-num">소재 ${i + 1}</div>
+        <div class="mat-row">
+          <div class="mat-label">📢 오프닝</div>
+          <div class="mat-text">${esc(m.opening || '')}</div>
+        </div>
+        <div class="mat-row">
+          <div class="mat-label">🤝 공감 포인트</div>
+          <div class="mat-text">${esc(m.empathy || '')}</div>
+        </div>
+        <div class="mat-row">
+          <div class="mat-label">🎯 제품 연결</div>
+          <div class="mat-text">${esc(m.connection || '')}</div>
+        </div>`;
+      wrap.appendChild(d);
+    });
+  }
+
+  // ============================================================
+  //  BRIEFING SHEET
+  // ============================================================
+  function showBriefing() {
+    renderSheet();
+    goStep(2);
+  }
+
+  function renderSheet() {
+    const today = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+    const tagHtml = selectedTrends.map(t => `<span class="trend-tag">${esc(t)}</span>`).join('');
+    const matsHtml = materials.map((m, i) => `
+      <div class="s-mat">
+        <div class="s-mat-num">소재 ${i + 1}</div>
+        <div class="s-mat-row"><span class="s-mat-key">오프닝</span><span>${esc(m.opening || '')}</span></div>
+        <div class="s-mat-row"><span class="s-mat-key">공감</span><span>${esc(m.empathy || '')}</span></div>
+        <div class="s-mat-row"><span class="s-mat-key">제품연결</span><span>${esc(m.connection || '')}</span></div>
+      </div>`).join('');
+
+    document.getElementById('sheetWrap').innerHTML = `
+      <div class="briefing-sheet" id="printSheet">
+        <div class="sheet-head">
+          <div class="sheet-head-top">
+            <div class="sheet-brand">DAESANG · DAISY</div>
+            <div class="sheet-date">${today}</div>
+          </div>
+          <div class="sheet-name">${esc(state.clientName)}</div>
+          <div class="sheet-meta">${esc(state.industry)} · ${esc(state.channel)}</div>
+        </div>
+        <div class="sheet-accent"></div>
+        <div class="sheet-body">
+          <div class="sheet-section">
+            <div class="sheet-sec-title">핵심 트렌드</div>
+            <div class="trend-tags">${tagHtml}</div>
+          </div>
+          <div class="sheet-section">
+            <div class="sheet-sec-title">추천 상담 소재</div>
+            ${matsHtml}
+          </div>
+        </div>
+        <div class="sheet-footer">
+          AI 생성 결과입니다. 실제 상담 시 상황에 맞게 조정하여 활용하세요. &nbsp;|&nbsp; DAESANG © 2026
+        </div>
+      </div>`;
+  }
+
+  // ============================================================
+  //  EXPORT
+  // ============================================================
+  function doPrint() { window.print(); }
+
+  function doCopy() {
+    const text = [
+      `[상담 브리핑 시트 – ${state.clientName}]`,
+      `업종: ${state.industry}  |  채널: ${state.channel}`,
+      '',
+      '■ 핵심 트렌드',
+      ...selectedTrends.map((t, i) => `${i + 1}. ${t}`),
+      '',
+      '■ 추천 상담 소재',
+      ...materials.map((m, i) => [
+        `[소재 ${i + 1}]`,
+        `오프닝:  ${m.opening}`,
+        `공감:    ${m.empathy}`,
+        `제품연결: ${m.connection}`,
+      ].join('\n')),
+      '',
+      '— DAESANG DAISY AI 생성'
+    ].join('\n');
+
+    navigator.clipboard.writeText(text)
+      .then(() => alert('클립보드에 복사되었습니다.'))
+      .catch(() => {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        alert('복사되었습니다.');
+      });
+  }
+
+  // ============================================================
+  //  UTILS
+  // ============================================================
+  function esc(str) {
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+  }
+
+  function setQ(text) {
+    document.getElementById('customPrompt').value = text;
+  }
+</script>
+</body>
+</html>

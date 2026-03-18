@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DAISY - Daesang AI Sales Intelligence for You</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container {        $env:GEMINI_API_KEY = "AIzaSyBsHg1L5aCphSIuW5XPvrXDHWPzmfHY7uM"
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #ccc;
+        }
+        .tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            background-color: #e0e0e0;
+        }
+        .tab.active {
+            background-color: #fff;
+            border-bottom: 2px solid #007bff;
+        }
+        .tab-content {
+            display: none;
+            padding: 20px;
+            background-color: #fff;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            margin-top: 10px;
+        }
+        input, select, textarea {
+            padding: 8px;
+            margin-top: 5px;
+        }
+        button {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .trend-card {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin: 10px 0;
+            cursor: pointer;
+        }
+        .selected {
+            background-color: #d4edda;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>DAISY - Daesang AI Sales Intelligence for You</h1>
+        <div class="tabs">
+            <div class="tab active" onclick="showTab(0)">거래처 입력</div>
+            <div class="tab" onclick="showTab(1)">트렌드 & 소재</div>
+            <div class="tab" onclick="showTab(2)">브리핑 시트</div>
+        </div>
+        <div id="tab0" class="tab-content active">
+            <h2>거래처 정보 입력</h2>
+            <form id="clientForm">
+                <label for="industry">업종:</label>
+                <select id="industry">
+                    <option value="식자재">식자재</option>
+                    <option value="소스">소스</option>
+                    <option value="조미료">조미료</option>
+                    <option value="기타">기타</option>
+                </select>
+                <label for="channel">채널:</label>
+                <select id="channel">
+                    <option value="B2B 대리점">B2B 대리점</option>
+                    <option value="B2C 소매">B2C 소매</option>
+                </select>
+                <label for="clientName">거래처명:</label>
+                <input type="text" id="clientName" required>
+                <label for="interests">담당자 관심사:</label>
+                <textarea id="interests"></textarea>
+                <button type="submit">트렌드 브리핑 생성</button>
+            </form>
+        </div>
+        <div id="tab1" class="tab-content">
+            <h2>트렌드 & 소재</h2>
+            <div id="trends"></div>
+            <button onclick="generateMaterials()">상담 소재 생성</button>
+            <div id="materials"></div>
+            <label for="prompt">프롬프트 수정:</label>
+            <textarea id="prompt"></textarea>
+            <button onclick="regenerate()">재생성</button>
+        </div>
+        <div id="tab2" class="tab-content">
+            <h2>상담 브리핑 시트</h2>
+            <div id="briefingSheet"></div>
+            <button onclick="exportSheet()">출력</button>
+        </div>
+    </div>
+    <script>
+        let clientData = {};
+        let selectedTrends = [];
+        let materials = [];
+
+        function showTab(index) {
+            const tabs = document.querySelectorAll('.tab');
+            const contents = document.querySelectorAll('.tab-content');
+            tabs.forEach(tab => tab.classList.remove('active'));
+            contents.forEach(content => content.classList.remove('active'));
+            tabs[index].classList.add('active');
+            contents[index].classList.add('active');
+        }
+
+        document.getElementById('clientForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            clientData = {
+                industry: document.getElementById('industry').value,
+                channel: document.getElementById('channel').value,
+                clientName: document.getElementById('clientName').value,
+                interests: document.getElementById('interests').value
+            };
+            try {
+                const response = await fetch('/generate-trends', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(clientData)
+                });
+                const data = await response.json();
+                displayTrends(data.trends);
+                showTab(1);
+            } catch (error) {
+                alert('트렌드 생성 실패');
+            }
+        });
+
+        function displayTrends(trends) {
+            const trendsDiv = document.getElementById('trends');
+            trendsDiv.innerHTML = '';
+            trends.forEach((trend, index) => {
+                const card = document.createElement('div');
+                card.className = 'trend-card';
+                card.innerHTML = `<h3>${trend}</h3>`;
+                card.onclick = () => selectTrend(index, trend);
+                trendsDiv.appendChild(card);
+            });
+        }
+
+        function selectTrend(index, trend) {
+            const cards = document.querySelectorAll('.trend-card');
+            cards[index].classList.toggle('selected');
+            if (selectedTrends.includes(trend)) {
+                selectedTrends = selectedTrends.filter(t => t !== trend);
+            } else {
+                selectedTrends.push(trend);
+            }
+        }
+
+        async function generateMaterials() {
+            try {
+                const response = await fetch('/generate-materials', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ trends: selectedTrends, clientData })
+                });
+                const data = await response.json();
+                materials = data.materials;
+                displayMaterials();
+            } catch (error) {
+                alert('소재 생성 실패');
+            }
+        }
+
+        function displayMaterials() {
+            const materialsDiv = document.getElementById('materials');
+            materialsDiv.innerHTML = '';
+            materials.forEach(material => {
+                const div = document.createElement('div');
+                div.innerHTML = `<p><strong>오프닝:</strong> ${material.opening}</p><p><strong>공감:</strong> ${material.empathy}</p><p><strong>연결:</strong> ${material.connection}</p>`;
+                materialsDiv.appendChild(div);
+            });
+            generateBriefingSheet();
+            showTab(2);
+        }
+
+        function regenerate() {
+            const prompt = document.getElementById('prompt').value;
+            // Simulate regeneration with prompt
+            generateMaterials();
+        }
+
+        function generateBriefingSheet() {
+            const sheet = document.getElementById('briefingSheet');
+            sheet.innerHTML = `
+                <h3>${clientData.clientName}</h3>
+                <p>핵심 트렌드: 트렌드 1, 트렌드 2</p>
+                <p>상담 소재: ${materials.length}개</p>
+                <p>자사 제품 연결점: ...</p>
+            `;
+        }
+
+        function exportSheet() {
+            // Simple export as text
+            alert('브리핑 시트 출력: ' + document.getElementById('briefingSheet').innerText);
+        }
+    </script>
+</body>
+</html>
