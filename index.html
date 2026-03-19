@@ -464,6 +464,21 @@
     }
     .site-badge:hover { background: #D8E0FF; }
 
+    /* ===== TREND URL LINK ===== */
+    .trend-url-link {
+      display: inline-block;
+      margin-top: 6px;
+      font-size: 11px;
+      color: #3D5FC0;
+      text-decoration: none;
+      background: #EEF2FF;
+      border: 1px solid #C4D0F5;
+      border-radius: 10px;
+      padding: 3px 9px;
+      transition: background 0.15s;
+    }
+    .trend-url-link:hover { background: #D8E0FF; }
+
     /* ===== METHOD BADGE ===== */
     .method-badge {
       display: inline-flex; align-items: center; gap: 4px;
@@ -850,6 +865,7 @@
         <div class="trend-num">트렌드 ${i + 1}</div>
         <div class="trend-title">${esc(t.title)}</div>
         ${t.summary ? `<div class="trend-sub">${esc(t.summary)}</div>` : ''}
+        ${t.url ? `<a class="trend-url-link" href="${esc(t.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">🔗 출처 보기</a>` : ''}
         <div class="trend-summary-wrap" id="sum-wrap-${i}">
           <div class="sum-loading" id="sumload-${i}">
             <div class="spinner" style="width:14px;height:14px;border-width:2px"></div>
